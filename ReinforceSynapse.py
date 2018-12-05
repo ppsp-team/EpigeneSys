@@ -1,3 +1,4 @@
+
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
@@ -18,7 +19,7 @@ Date: 2018-08-24
 from brian2 import *
 
 # Parameters
-simulation_duration = 6 * second
+simulation_duration = 1000* second
 
 ## Neurons
 taum = 10*ms
@@ -47,26 +48,33 @@ epsilon_dopa = 5e-3
 network = Network()
 
 ## Stimuli section
-input_indices = array([0, 1, 0, 1, 1, 0, 
-                       0, 1, 0, 1, 1, 0])
-input_times = array([ 500,  550, 1000, 1010, 1500, 1510, 
-                     3500, 3550, 4000, 4010, 4500, 4510])*ms
-input = SpikeGeneratorGroup(2, input_indices, input_times)
+num_neurons = 100
 
-neurons = NeuronGroup(2, '''dv/dt = (ge * (Ee-vr) + El - v) / taum : volt
-                            dge/dt = -ge / taue : 1''',
+input_rate = 1*Hz
+input = PoissonGroup(num_neurons, input_rate)
+network.add(input)
+
+neurons = NeuronGroup(num_neurons, '''dv/dt = (ge * (Ee-vr) + El - v) / taum : volt
+                                      dge/dt = -ge / taue : 1''',
                       threshold='v>vt', reset='v = vr',
                       method='linear')
 neurons.v = vr
-neurons_monitor = SpikeMonitor(neurons)
+network.add(neurons)
+
+neurons_monitor = SpikeMonitor(neurons, ['v'], record=True)
+network.add(neurons_monitor)
 
 synapse = Synapses(input, neurons, 
                    model='''s: volt''',
                    on_pre='v += s')
-synapse.connect(i=[0, 1], j=[0, 1])
+synapse.connect(i=list(range(0, num_neurons)), j=list(range(0, num_neurons)))
 synapse.s = 100. * mV
 
+network.add(synapse)
+
 ## STDP section
+epsilon = 0.1 # sparseness of synaptic connections
+
 synapse_stdp = Synapses(neurons, neurons,
                    model='''mode: 1
                          dc/dt = -c / tauc : 1 (clock-driven)
@@ -85,41 +93,75 @@ synapse_stdp = Synapses(neurons, neurons,
                           ''',
                    method='euler'
                    )
-synapse_stdp.connect(i=0, j=1)
+synapse_stdp.connect(p=epsilon, condition='i!=j')
+if not((0, 1) in zip(synapse_stdp.i, synapse_stdp.j)):
+    synapse_stdp.connect(i=0, j=1)
+
+k = 0
+for i, j in zip(synapse_stdp.i, synapse_stdp.j):
+    if ((i,j)==(0,1)):
+        break
+    k+=1
+
 synapse_stdp.mode = 0
 synapse_stdp.s = 1e-10
 synapse_stdp.c = 1e-10
 synapse_stdp.d = 0
-synapse_stdp_monitor = StateMonitor(synapse_stdp, ['s', 'c', 'd'], record=[0])
+
+network.add(synapse_stdp)
+
+synapse_stdp_monitor = StateMonitor(synapse_stdp, ['s', 'c', 'd'], record=[k])
+network.add(synapse_stdp_monitor)
 
 ## Dopamine signaling section
-dopamine_indices = array([0, 0, 0])
-dopamine_times = array([3520, 4020, 4520])*ms
-dopamine = SpikeGeneratorGroup(1, dopamine_indices, dopamine_times)
+
+check_reward = NeuronGroup(1, '''dunlock/dt = (-1*second-unlock*0.001)/(1*second) : second
+                                 spike : second''',
+                          threshold='spike > 1*ms', reset='spike = 0*second', method='linear')
+network.add(check_reward)
+reward_monitor = SpikeMonitor(check_reward, ['spike'], record=True)
+network.add(reward_monitor)
+
+check_pre = Synapses(neurons, check_reward, model='''''', on_pre='unlock_post = 11*ms', method='exact')
+check_post = Synapses(neurons, check_reward, model='''''', on_pre='spike_post = clip(unlock_post, 0*second, 11*ms)', method='exact')
+check_pre.connect(i=0, j=0)
+check_post.connect(i=1, j=0)
+network.add(check_pre)
+network.add(check_post)
+
+dopamine = NeuronGroup(1, '''v : volt''', threshold='v>1*volt', reset='v=0*volt')
+network.add(dopamine)
+dopamine_trigger = Synapses(check_reward, dopamine, model='''''', on_pre='v_post += 2*volt', method='exact')
+dopamine_trigger.connect(p=1.)
+network.add(dopamine_trigger)
 dopamine_monitor = SpikeMonitor(dopamine)
+network.add(dopamine_monitor)
+
+
 reward = Synapses(dopamine, synapse_stdp, model='''''',
-                            on_pre='''d_post += epsilon_dopa''',
-                            method='exact')
+                             on_pre='''d_post += epsilon_dopa''',
+                             method='exact')
 reward.connect(p=1.)
+reward.delay='1*second'
+network.add(reward)
 
 # Simulation
 ## Classical STDP
-synapse_stdp.mode = 0
-run(simulation_duration/2)
+#synapse_stdp.mode = 0
+
 ## Dopamine modulated STDP
 synapse_stdp.mode = 1
-run(simulation_duration/2)
+network.run(simulation_duration, report='text')
 
-# Visualisation
+#Visualization :
 dopamine_indices, dopamine_times = dopamine_monitor.it
-neurons_indices, neurons_times = neurons_monitor.it
-figure(figsize=(18,9))
+neurons_indices, neurons_times = reward_monitor.it
+figure(figsize=(9,9))
 subplot(411)
-plot([0.05, 2.95], [2.7, 2.7], linewidth=5, color='k')
-text(1.5, 3, 'Classical STDP', horizontalalignment='center', fontsize=20)
-plot([3.05, 5.95], [2.7, 2.7], linewidth=5, color='k')
-text(4.5, 3, 'Dopamine modulated STDP', horizontalalignment='center', fontsize=20)
+plot([20, simulation_duration/second-20], [2.7, 2.7], linewidth=5, color='k')
+text(simulation_duration/second/2, 3, 'Dopamine modulated STDP', horizontalalignment='center', fontsize=20)
 plot(neurons_times, neurons_indices, 'ob')
+plot(neurons_times, neurons_indices + 1, 'ob')
 plot(dopamine_times, dopamine_indices + 2, 'or')
 xlim([0, simulation_duration/second])
 ylim([-0.5, 4])
@@ -142,3 +184,10 @@ ylabel('Synaptic strength s(t)')
 xlabel('Time (s)')
 tight_layout()
 show()
+
+plt.hist(synapse_stdp.s/gmax)
+plt.title("Synaptic weight distribution")
+show()
+
+
+
