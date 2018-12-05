@@ -19,7 +19,7 @@ Date: 2018-08-24
 from brian2 import *
 
 # Parameters
-simulation_duration = 3600 * second
+simulation_duration = 1000 * second
 
 ## Neurons
 taum = 10*ms
@@ -93,7 +93,7 @@ synapse_stdp = Synapses(neurons, neurons,
                           ''',
                    method='euler'
                    )
-synapse_stdp.connect(p=epsilon)
+synapse_stdp.connect(p=epsilon, condition='i!=j')
 if not((0, 1) in zip(synapse_stdp.i, synapse_stdp.j)):
     synapse_stdp.connect(i=0, j=1)
 
@@ -188,5 +188,10 @@ show()
 plt.hist(synapse_stdp.s/gmax)
 show()
 
-print(synapse_stdp.s[k])
+print(synapse_stdp.s[k]/gmax)
+i_max = argmax(synapse_stdp.s)
+print(synapse_stdp.i[i_max])
+print(synapse_stdp.j[i_max])
+
+
 
