@@ -2,7 +2,7 @@ from brian2 import *
 import numpy as np
 
 # Parameters
-simulationDuration = 1200 * second
+simulationDuration = 10 * second
 numberNeuronsKernel = 100
 eta = 0.1 # learning rate
 
@@ -67,6 +67,7 @@ input1 = NeuronGroup(numberNeuronsKernel,
                     reset='v = vr',
                     refractory=5*ms,
                     method='euler')
+input1.v = vr
 network.add(input1)
 
 input2 = NeuronGroup(numberNeuronsKernel, 
@@ -77,6 +78,7 @@ input2 = NeuronGroup(numberNeuronsKernel,
                     reset='v = vr',
                     refractory=5*ms,
                     method='euler')
+input2.v = vr
 network.add(input2)
 
 
@@ -91,7 +93,10 @@ kernel = NeuronGroup(numberNeuronsKernel,
                     reset='v = vr',
                     refractory=5*ms,
                     method='euler')
+kernel.v = vr
 network.add(kernel)
+kernelMonitor = SpikeMonitor(kernel)
+network.add(kernelMonitor)
 
 percentInh = 0.2
 percentExc = 1 - percentInh
@@ -105,7 +110,10 @@ output = NeuronGroup(2,
                     reset='v = vr',
                     refractory=5*ms,
                     method='euler')
+output.v = vr
 network.add(output)
+outputMonitor = SpikeMonitor(output)
+network.add(outputMonitor)
 
 # Synapse from the spike generator group to the actual input neurons
 input1Synapse = Synapses(input1Generator, input1, on_pre = 'v += vt-el')
@@ -135,6 +143,9 @@ synapseExcToAll = Synapses(kernel[:int(percentExc*numberNeuronsKernel)], kernel,
                           ''',
                       method='euler')
 synapseExcToAll.connect(p = excToAllDensity)
+synapseExcToAll.mode = 1
+synapseExcToAll.s = 1e-10
+synapseExcToAll.c = 1e-10
 network.add(synapseExcToAll)
 
 # Inhibitory synapses in kernel to inhibitory neurons
@@ -157,6 +168,9 @@ synapseInhToInh = Synapses(kernel[int(percentExc*numberNeuronsKernel)+1:numberNe
                           ''',
                       method='euler')
 synapseInhToInh.connect(p = inhToInhDensity)
+synapseInhToInh.mode = 1
+synapseInhToInh.s = 1e-10
+synapseInhToInh.c = 1e-10
 network.add(synapseInhToInh)
 
 # Inhibitory synapses in kernel to excitatory neurons: this is where the plasticity happens
@@ -179,10 +193,15 @@ synapseInhToExc = Synapses(kernel[int(percentExc*numberNeuronsKernel)+1:numberNe
                           ''',
                       method='euler')
 synapseInhToExc.connect(p = inhToExcDensity)
+synapseInhToExc.mode = 1
+synapseInhToExc.s = 1e-10
+synapseInhToExc.c = 1e-10
 network.add(synapseInhToExc)
 
 
 # Synapses between inputs and kernel: only connect to the excitatory neurons in the kernel
+inputToKernelDensity = 0.2
+
 input1KernelSynapses = Synapses(input1, kernel[:int(percentExc*numberNeuronsKernel)],
                      model='''mode: 1
                          dc/dt = -c / tauc : 1 (clock-driven)
@@ -218,14 +237,20 @@ input2KernelSynapses = Synapses(input2, kernel[:int(percentExc*numberNeuronsKern
                           s = clip(s + (1-mode) * Apre, -gmax, gmax)
                           ''',
                       method='euler')
-input1KernelSynapses.connect()
-input2KernelSynapses.connect()
+input1KernelSynapses.connect(p=inputToKernelDensity)
+input2KernelSynapses.connect(p=inputToKernelDensity)
+input1KernelSynapses.mode = 1
+input1KernelSynapses.s = 1e-10
+input1KernelSynapses.c = 1e-10
+input2KernelSynapses.mode = 1
+input2KernelSynapses.s = 1e-10
+input2KernelSynapses.c = 1e-10
 network.add(input1KernelSynapses)
 network.add(input2KernelSynapses)
 
 # Synapses between kernel and output
 
-kernelExcToOutputSynapses = Synapses(kernel, output,
+kernelExcToOutputSynapses = Synapses(kernel[:int(percentExc*numberNeuronsKernel)], output,
                       model='''mode: 1
                          dc/dt = -c / tauc : 1 (clock-driven)
                          dd/dt = -d / taud : 1 (clock-driven)
@@ -242,7 +267,7 @@ kernelExcToOutputSynapses = Synapses(kernel, output,
                           s = clip(s + (1-mode) * Apre, -gmax, gmax)
                           ''',
                       method='euler')
-kernelInhToOutputSynapses = Synapses(kernel, output,
+kernelInhToOutputSynapses = Synapses(kernel[int(percentExc*numberNeuronsKernel):], output,
                       model='''mode: 1
                          dc/dt = -c / tauc : 1 (clock-driven)
                          dd/dt = -d / taud : 1 (clock-driven)
@@ -262,6 +287,12 @@ kernelInhToOutputSynapses = Synapses(kernel, output,
 
 kernelExcToOutputSynapses.connect()
 kernelInhToOutputSynapses.connect()
+kernelExcToOutputSynapses.mode = 1
+kernelExcToOutputSynapses.s = 1e-10
+kernelExcToOutputSynapses.c = 1e-10
+kernelInhToOutputSynapses.mode = 1
+kernelInhToOutputSynapses.s = 1e-10
+kernelInhToOutputSynapses.c = 1e-10
 network.add(kernelExcToOutputSynapses)
 network.add(kernelInhToOutputSynapses)
 
@@ -321,17 +352,8 @@ network.add(dopamineDispenser7)
 
 
 
+network.run(simulationDuration, report='text')
 
-
-
-
-
-
-
-
-
-
-network.run(1*ms, report='text')
 
 '''What does the network look like?'''
 import matplotlib.pyplot as plt
@@ -360,4 +382,7 @@ orange_patch = mpatches.Patch(color='orange', label='Output')
 plt.legend(handles=[red_patch,blue_patch,green_patch,purple_patch,orange_patch])
 
 
+plt.show()
+
+plt.plot(outputMonitor.t/ms, outputMonitor.i)
 plt.show()
