@@ -273,7 +273,7 @@ dopamineMonitor = NeuronGroup(1, '''
                                    dmonitor/dt = monitor / taumonitor : 1
                                    ''', # mode = 1 when xor answer is 1 and -1 when it is 0
                                    threshold='monitor > 1',
-                                   reset='montior=0',
+                                   reset='monitor=0',
                                    method='linear')
 dopamineMonitor.mode = 0
 network.add(dopamineMonitor)
