@@ -8,11 +8,18 @@ prefs.codegen.target = 'numpy'  # use the Python fallback (cython bugs for some 
 start_scope()
 
 """Parameters"""
-simulation_duration = 1000 * second
+memory_intensive = False
+
+if memory_intensive:
+    numberNeuronGroups = 100
+    neuronGroupSize = 50
+    simulation_duration = 1000 * second
+else:
+    numberNeuronGroups = 10
+    neuronGroupSize = 10
+    simulation_duration = 100 * second
 
 # Neuron parameters
-numberNeuronGroups = 2
-neuronGroupSize = 50
 taum = 1*ms # neuron equation time constant
 Ee = 0*mV # excitatory synapse equilibrium potential
 vt = -54*mV # threshold potential
@@ -147,16 +154,16 @@ neuronSpikes = SpikeMonitor(neurons, record=True)
 network.add(neuronSpikes)
 network.run(simulation_duration, report='text')
 
-
 for xStim in input_times/ms:
        plt.axvline(x = xStim, linestyle = '-', color = 'orange')
 
 plt.plot(neuronSpikes.t/ms, neuronSpikes.i, '.', markersize=3)
 plt.xlabel('Time (ms)')
 plt.ylabel('Neuron index')
-
 plt.show()
 
+plt.hist(np.diff(dopamine_monitor.t/ms/1000))
+plt.show()
 
 tab = []
 for t0 in input_times/ms:
