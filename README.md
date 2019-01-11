@@ -12,6 +12,7 @@ ReinforceSynapse : Izhikevich's 2007 paper first experiment to test his model. I
 
 PavlovianConditioning : Izhikevich's 2007 paper second experiment to test his model. We have different interconnected groups of neurons, and we artificially realease dopaming when a neuron from group 1 is activated. The goal is to check that synapses coming from group 1 actually reinforce themselves more that the other ones.
 
-SimpleConditioning : a slightly simpler version with only 2 neuron groups.
+SimpleConditioning : a slightly simpler version with only 2 neuron groups, cf SimpleConditioningDiagram.jpg
+
 
 XOR.py : Implementation of the XOR function with respect to Izhikevich's 2007 model.
