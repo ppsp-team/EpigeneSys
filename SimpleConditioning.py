@@ -3,12 +3,12 @@ import matplotlib.pyplot as plt
 import numpy as np
 import numpy.random as random
 from brian2 import *
-prefs.codegen.target = 'numpy'  # use the Python fallback
+prefs.codegen.target = 'numpy'  # use the Python fallback (cython bugs for some reason)
 
 start_scope()
 
 """Parameters"""
-simulation_duration = 3600 * second
+simulation_duration = 1000 * second
 
 # Neuron parameters
 numberNeuronGroups = 2
@@ -18,7 +18,7 @@ Ee = 0*mV # excitatory synapse equilibrium potential
 vt = -54*mV # threshold potential
 vr = -70*mV # resting potential
 El = -70*mV # leak channel potential
-taue = 0.5*ms
+taue = 0.5*ms # synaptic conductance time constant
 
 ## STDP
 taupre = 20*ms
@@ -30,10 +30,10 @@ dApost *= gmax
 dApre *= gmax
 
 ## Dopamine signaling
-tauc = 1000*ms
-taud = 200*ms
-taus = 1*ms
-epsilon_dopa = 5e-1
+tauc = 1000*ms # eligibility time constant
+taud = 200*ms # dopamine release time constant
+taus = 1*ms # synaptic weight constant 
+epsilon_dopa = 5e-1 # amount of dopamine released on reward
 
 
 """Initialize a network"""
