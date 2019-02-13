@@ -1,7 +1,7 @@
 Quick description :
-* Conditioning/SimpleConditioning : Testing the second experiment in Izhikevich's 2007 paper.
-* MultiColumns/GNW : Architecture for the Global Neuronal Workspace
-* MultiColumns/Digits : Sandbox for MNIST digits recognition
-* ReinforceSynapse/ReinforceSynapse : Testing the first experiment in Izhikevich's 2007 paper. In a large network of neurons, we artificially release dopamine when the synapse between neurons 0 and 1 is activated. The goal is to check that this synapse actually reinforces itself.
-* SynapseModel/STDP_Reward : Izhikevich's synapse model
-* XOR/XOR : Sandbox for XOR function
+* ```Conditioning/SimpleConditioning```: Test of the second experiment in Izhikevich's 2007 paper. In a network composed of multiple small groups of neurons, release dopamine whenever neurons in the first group spike.
+* ```MultiColumns/GNW```: Architecture for a multi-column network in Brian.
+* ```MultiColumns/Digits```: Sandbox for MNIST digits recognition.
+* ```ReinforceSynapse/ReinforceSynapse```: Test of the first experiment in Izhikevich's 2007 paper. In a large network of neurons, release dopamine when the synapse between two given neurons is activated. The goal is to check whether this synapse is selectively reinforced.
+* ```SynapseModel/STDP_Reward```: Brian implementation of Izhikevich's synapse model as described in his 2007 paper.
+* ```XOR/XOR```: Sandbox for the XOR function.
