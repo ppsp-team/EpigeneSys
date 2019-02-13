@@ -1,4 +1,3 @@
-
 import matplotlib.pyplot as plt
 import numpy as np
 import numpy.random as random
@@ -17,7 +16,7 @@ if memory_intensive:
 else:
     numberNeuronGroups = 10
     neuronGroupSize = 10
-    simulation_duration = 100 * second
+    simulation_duration = 30 * second
 
 # Neuron parameters
 taum = 1*ms # neuron equation time constant
@@ -40,7 +39,7 @@ dApre *= gmax
 tauc = 1000*ms # eligibility time constant
 taud = 200*ms # dopamine release time constant
 taus = 1*ms # synaptic weight constant 
-epsilon_dopa = 5e-1 # amount of dopamine released on reward
+epsilon_dopa = 5e-3 # amount of dopamine released on reward
 
 
 """Initialize a network"""
@@ -91,7 +90,7 @@ network.add(noiseSynapse)
 
 
 """STDP section"""
-epsilon = 0.5 # sparseness of synaptic connections
+epsilon = 0.1 # sparseness of synaptic connections
 
 synapse_stdp = Synapses(neurons, neurons,
                    model='''mode: 1
@@ -130,6 +129,9 @@ network.add(synapse_stdp)
 dopamine = NeuronGroup(1, '''v : volt''', threshold='v>1*volt', reset='v=0*volt')
 network.add(dopamine)
 
+# To monitor when dopamine is released
+dopamine_monitor = SpikeMonitor(dopamine)
+network.add(dopamine_monitor)
 
 # Synapse ordering dopamine release when the conditioning stimulus occurs
 conditioning = Synapses(groupedStimuli, dopamine, on_pre='''v_post += 2*volt''', method='exact') # 2*volt is bigger than the dopamine neuron's 1*volt threshold
@@ -154,18 +156,31 @@ neuronSpikes = SpikeMonitor(neurons, record=True)
 network.add(neuronSpikes)
 network.run(simulation_duration, report='text')
 
-for xStim in input_times/ms:
-       plt.axvline(x = xStim, linestyle = '-', color = 'orange')
+## Results
 
-plt.plot(neuronSpikes.t/ms, neuronSpikes.i, '.', markersize=3)
-plt.xlabel('Time (ms)')
-plt.ylabel('Neuron index')
-plt.show()
-
-plt.hist(np.diff(dopamine_monitor.t/ms/1000))
-plt.show()
-
-tab = []
-for t0 in input_times/ms:
-    tab.append(len([t for t in neuronSpikes.t/ms if t>= t0 and t < t0+50]))
-tab
+figure(figsize=(9,18))
+subplot(211)
+rewardTimes = [t for t in dopamine_monitor.t/ms if t < 5000]
+if len(rewardTimes) > 0:
+   plt.axvline(x = rewardTimes[0], linestyle = '-', color = 'orange', label='dopamine release')
+for rewardTime in rewardTimes[1:]:
+   plt.axvline(x = rewardTime, linestyle = '-', color = 'orange')
+spikeTimes = [t for t in neuronSpikes.t/ms if t < 5000]
+spikeIndex = neuronSpikes.i[:len(spikeTimes)]
+plt.plot(spikeTimes, spikeIndex, '.', markersize=3, label='neuron spike')
+ylabel('Neuron Index')
+xlabel('Time (ms)')
+plt.legend()
+subplot(212)
+rewardTimes = [t for t in dopamine_monitor.t/ms if t > simulation_duration*1000/second-5000]
+if len(rewardTimes) > 0:
+   plt.axvline(x = rewardTimes[0], linestyle = '-', color = 'orange', label='dopamine release')
+for rewardTime in rewardTimes[1:]:
+   plt.axvline(x = rewardTime, linestyle = '-', color = 'orange')
+spikeTimes = [t for t in neuronSpikes.t/ms if t > simulation_duration*1000/second-5000]
+spikeIndex = neuronSpikes.i[-len(spikeTimes):]
+plt.plot(spikeTimes, spikeIndex, '.', markersize=3, label='neuron spike')
+ylabel('Neuron Index')
+xlabel('Time (ms)')
+plt.legend()
+show()

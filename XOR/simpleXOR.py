@@ -56,7 +56,7 @@ network.add(input1Generator)
 input2Generator = SpikeGeneratorGroup(2, indicesInput2, times)
 network.add(input2Generator)
 
-input1 = NeuronGroup(numberNeuronsKernel, 
+input1 = NeuronGroup(2, 
                     '''dv/dt = (ge * (Ee-vr) + El - v) / taum : volt
                                       dge/dt = -ge / taue : 1''',
                     threshold='v>vt', 
@@ -65,7 +65,7 @@ input1 = NeuronGroup(numberNeuronsKernel,
 input1.v = vr
 network.add(input1)
 
-input2 = NeuronGroup(numberNeuronsKernel, 
+input2 = NeuronGroup(2, 
                     '''dv/dt = (ge * (Ee-vr) + El - v) / taum : volt
                                       dge/dt = -ge / taue : 1''',
                     threshold='v>vt', 
@@ -109,16 +109,16 @@ network.add(outputMonitor)
 
 # Synapse from the spike generator group to the actual input neurons
 input1Synapse = Synapses(input1Generator, input1, on_pre = 'v += vt-El')
-input2Synapse = Synapses(input2Generator, input1, on_pre = 'v += vt-El')
-input1Synapse.connect()
-input2Synapse.connect()
+input1Synapse.connect(condition = 'i == j')
 network.add(input1Synapse)
-network.add(input2Synapse)
 
+input2Synapse = Synapses(input2Generator, input2, on_pre = 'v += vt-El')
+input2Synapse.connect(condition = 'i == j')
+network.add(input2Synapse)
 
 # Kernel synapse 
 kernelDensity = 0.1
-kernelSynapses = Synapses(kernel[:int(numberNeuronsKernel)], kernel, 
+kernelSynapses = Synapses(kernel, kernel, 
                       model='''mode: 1
                          dc/dt = -c / tauc : 1 (clock-driven)
                          dd/dt = -d / taud : 1 (clock-driven)
