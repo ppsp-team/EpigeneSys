@@ -151,7 +151,7 @@ network.add(reward)
 #synapse_stdp.mode = 0
 
 ## Dopamine modulated STDP
-synapse_stdp.mode = 0
+synapse_stdp.mode = 1
 neuronSpikes = SpikeMonitor(neurons, record=True)
 network.add(neuronSpikes)
 network.run(simulation_duration, report='text')
