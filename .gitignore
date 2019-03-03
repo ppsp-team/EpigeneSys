@@ -5,3 +5,6 @@
 .vs/VSWorkspaceState.json
 .ipynb_chekpoints
 .DS_Store
+.vs/ProjectSettings.json
+.vs/Code/v15/.suo
+.vs/config/applicationhost.config

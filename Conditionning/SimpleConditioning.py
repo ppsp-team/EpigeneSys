@@ -16,7 +16,7 @@ if memory_intensive:
 else:
     numberNeuronGroups = 10
     neuronGroupSize = 10
-    simulation_duration = 30 * second
+    simulation_duration = 3600 * second
 
 # Neuron parameters
 taum = 1*ms # neuron equation time constant
@@ -99,7 +99,7 @@ synapse_stdp = Synapses(neurons, neurons,
                          ds/dt = mode * c * d / taus : 1 (clock-driven)
                          dApre/dt = -Apre / taupre : 1 (event-driven)
                          dApost/dt = -Apost / taupost : 1 (event-driven)''',
-                   on_pre='''ge += s
+                   on_pre='''ge += 40*s
                           Apre += dApre
                           c = clip(c + mode * Apost, -gmax, gmax)
                           s = clip(s + (1-mode) * Apost, -gmax, gmax)
@@ -123,6 +123,10 @@ synapse_stdp.d = 0
 
 # The synapse is ready to add !
 network.add(synapse_stdp)
+
+# To monitor the synaptic weight
+synapses_monitor = StateMonitor(synapse_stdp, ['s'], record=True, dt=20*second)
+network.add(synapses_monitor)
 
 """Dopamine signaling section"""
 
@@ -151,7 +155,7 @@ network.add(reward)
 #synapse_stdp.mode = 0
 
 ## Dopamine modulated STDP
-synapse_stdp.mode = 0
+synapse_stdp.mode = 1
 neuronSpikes = SpikeMonitor(neurons, record=True)
 network.add(neuronSpikes)
 network.run(simulation_duration, report='text')
@@ -159,7 +163,7 @@ network.run(simulation_duration, report='text')
 ## Results
 
 figure(figsize=(9,18))
-subplot(211)
+subplot(311)
 rewardTimes = [t for t in dopamine_monitor.t/ms if t < 5000]
 if len(rewardTimes) > 0:
    plt.axvline(x = rewardTimes[0], linestyle = '-', color = 'orange', label='dopamine release')
@@ -171,7 +175,7 @@ plt.plot(spikeTimes, spikeIndex, '.', markersize=3, label='neuron spike')
 ylabel('Neuron Index')
 xlabel('Time (ms)')
 plt.legend()
-subplot(212)
+subplot(312)
 rewardTimes = [t for t in dopamine_monitor.t/ms if t > simulation_duration*1000/second-5000]
 if len(rewardTimes) > 0:
    plt.axvline(x = rewardTimes[0], linestyle = '-', color = 'orange', label='dopamine release')
@@ -183,4 +187,20 @@ plt.plot(spikeTimes, spikeIndex, '.', markersize=3, label='neuron spike')
 ylabel('Neuron Index')
 xlabel('Time (ms)')
 plt.legend()
+subplot(313)
+group1 = np.array([0.] * len(synapses_monitor.t))
+group1_nb_synapses = 0
+mean = np.array([0.] * len(synapses_monitor.t))
+for i in range(len(synapses_monitor.s)):
+    if synapse_stdp.i[i] < neuronGroupSize:
+        group1 += synapses_monitor.s[i]
+        group1_nb_synapses += 1
+    mean += synapses_monitor.s[i] / (len(synapses_monitor.s))
+group1 = group1/group1_nb_synapses
+plt.plot(synapses_monitor.t, group1, label='group 1')
+plt.plot(synapses_monitor.t, mean, label='mean')
+ylabel('Average synaptic weight')
+xlabel('Time (ms)')
+plt.legend()
+tight_layout()
 show()
