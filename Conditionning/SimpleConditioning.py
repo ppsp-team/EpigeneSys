@@ -39,7 +39,7 @@ dApre *= gmax
 tauc = 1000*ms # eligibility time constant
 taud = 200*ms # dopamine release time constant
 taus = 1*ms # synaptic weight constant 
-epsilon_dopa = 5e-2 # amount of dopamine released on reward
+epsilon_dopa = 5e-3 # amount of dopamine released on reward
 
 
 """Initialize a network"""
