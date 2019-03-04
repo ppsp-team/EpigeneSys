@@ -12,11 +12,11 @@ memory_intensive = False
 if memory_intensive:
     numberNeuronGroups = 100
     neuronGroupSize = 50
-    simulation_duration = 1000 * second
+    simulation_duration = 3600 * second
 else:
     numberNeuronGroups = 10
     neuronGroupSize = 10
-    simulation_duration = 3600 * second
+    simulation_duration = 500 * second
 
 # Neuron parameters
 taum = 1*ms # neuron equation time constant
@@ -31,7 +31,7 @@ taupre = 20*ms
 taupost = taupre
 gmax = .01
 dApre = .01
-dApost = -dApre * taupre / taupost * 1.05
+dApost = -dApre * taupre / taupost
 dApost *= gmax
 dApre *= gmax
 
@@ -39,7 +39,7 @@ dApre *= gmax
 tauc = 1000*ms # eligibility time constant
 taud = 200*ms # dopamine release time constant
 taus = 1*ms # synaptic weight constant 
-epsilon_dopa = 5e-3 # amount of dopamine released on reward
+epsilon_dopa = 5e-2 # amount of dopamine released on reward
 
 
 """Initialize a network"""
