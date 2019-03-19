@@ -2,9 +2,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import numpy.random as random
 from brian2 import *
-prefs.codegen.target = 'numpy'  # use the Python fallback (cython bugs for some reason)
-
-start_scope()
 
 """Parameters"""
 memory_intensive = False
@@ -13,10 +10,16 @@ if memory_intensive:
     numberNeuronGroups = 10
     neuronGroupSize = 10
     simulation_duration = 500 * second
+    synaptic_weight_interval = 1 * second
+    prefs.codegen.target = 'cython'
 else:
     numberNeuronGroups = 2
     neuronGroupSize = 5
     simulation_duration = 120 * second
+    synaptic_weight_interval = 20 * second
+    prefs.codegen.target = 'numpy'
+
+start_scope()
 
 # Neuron parameters
 taum = 1*ms # neuron equation time constant
@@ -123,7 +126,8 @@ synapse_stdp.d = 0
 network.add(synapse_stdp)
 
 # To monitor the synaptic weight
-synapses_monitor = StateMonitor(synapse_stdp, ['s'], record=True, dt=1*second)
+synapses_monitor = StateMonitor(
+    synapse_stdp, ['s'], record=True, dt=synaptic_weight_interval)
 network.add(synapses_monitor)
 
 """Dopamine signaling section"""
@@ -209,7 +213,7 @@ plt.plot(synapses_monitor.t, group1, label='group 1')
 plt.plot(synapses_monitor.t, other, label='other')
 plt.plot(synapses_monitor.t, mean, label='mean')
 ylabel('Average synaptic weight')
-xlabel('Time (ms)')
+xlabel('Time (s)')
 plt.legend()
 tight_layout()
-show()
+show(block=True)
