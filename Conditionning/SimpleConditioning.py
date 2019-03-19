@@ -10,13 +10,13 @@ start_scope()
 memory_intensive = False
 
 if memory_intensive:
-    numberNeuronGroups = 100
-    neuronGroupSize = 50
-    simulation_duration = 3600 * second
-else:
     numberNeuronGroups = 10
     neuronGroupSize = 10
     simulation_duration = 500 * second
+else:
+    numberNeuronGroups = 2
+    neuronGroupSize = 5
+    simulation_duration = 120 * second
 
 # Neuron parameters
 taum = 1*ms # neuron equation time constant
@@ -26,7 +26,7 @@ vr = -70*mV # resting potential
 El = -70*mV # leak channel potential
 taue = 0.5*ms # synaptic conductance time constant
 
-## STDP
+# STDP
 taupre = 20*ms
 taupost = taupre
 gmax = .01
@@ -35,7 +35,7 @@ dApost = -dApre * taupre / taupost
 dApost *= gmax
 dApre *= gmax
 
-## Dopamine signaling
+# Dopamine signaling
 tauc = 1000*ms # eligibility time constant
 taud = 200*ms # dopamine release time constant
 taus = 1*ms # synaptic weight constant 
@@ -56,7 +56,6 @@ groupedStimuli = SpikeGeneratorGroup(numberNeuronGroups,input_indices, input_tim
 network.add(groupedStimuli)
 
 # Defining the noise
-
 noise_rate = 2*Hz
 noise = PoissonGroup(numberNeuronGroups*neuronGroupSize, noise_rate)
 network.add(noise)
@@ -78,13 +77,12 @@ inputSynapse.s = 100*mV # enough to guarantee a postsynaptic spike
 
 
 # Synapse between the noise and our neurons
-
 noiseSynapse = Synapses(noise, neurons, model='''s : volt''', on_pre='v += s')
 noiseSynapse.connect(condition = 'i==j', p = 1.)
 noiseSynapse.s = 100*mV # enough to guarantee a postsynaptic spike
 
 
- #The synapses are ready to add !
+# The synapses are ready to add !
 network.add(inputSynapse)
 network.add(noiseSynapse)
 
@@ -125,7 +123,7 @@ synapse_stdp.d = 0
 network.add(synapse_stdp)
 
 # To monitor the synaptic weight
-synapses_monitor = StateMonitor(synapse_stdp, ['s'], record=True, dt=20*second)
+synapses_monitor = StateMonitor(synapse_stdp, ['s'], record=True, dt=1*second)
 network.add(synapses_monitor)
 
 """Dopamine signaling section"""
@@ -161,7 +159,6 @@ network.add(neuronSpikes)
 network.run(simulation_duration, report='text')
 
 ## Results
-
 figure(figsize=(9,18))
 subplot(311)
 rewardTimes = [t for t in dopamine_monitor.t/ms if t < 5000]
@@ -175,6 +172,7 @@ plt.plot(spikeTimes, spikeIndex, '.', markersize=3, label='neuron spike')
 ylabel('Neuron Index')
 xlabel('Time (ms)')
 plt.legend()
+
 subplot(312)
 rewardTimes = [t for t in dopamine_monitor.t/ms if t > simulation_duration*1000/second-5000]
 if len(rewardTimes) > 0:
@@ -187,17 +185,28 @@ plt.plot(spikeTimes, spikeIndex, '.', markersize=3, label='neuron spike')
 ylabel('Neuron Index')
 xlabel('Time (ms)')
 plt.legend()
+
 subplot(313)
 group1 = np.array([0.] * len(synapses_monitor.t))
 group1_nb_synapses = 0
 mean = np.array([0.] * len(synapses_monitor.t))
+mean_nb_synapses = 0
+other = np.array([0.] * len(synapses_monitor.t))
+other_nb_synapses = 0
 for i in range(len(synapses_monitor.s)):
     if synapse_stdp.i[i] < neuronGroupSize:
         group1 += synapses_monitor.s[i]
         group1_nb_synapses += 1
-    mean += synapses_monitor.s[i] / (len(synapses_monitor.s))
+    else:
+        other += synapses_monitor.s[i]
+        other_nb_synapses += 1
+    mean += synapses_monitor.s[i]
+    mean_nb_synapses += 1
+mean = mean / mean_nb_synapses
 group1 = group1/group1_nb_synapses
+other = other/other_nb_synapses
 plt.plot(synapses_monitor.t, group1, label='group 1')
+plt.plot(synapses_monitor.t, other, label='other')
 plt.plot(synapses_monitor.t, mean, label='mean')
 ylabel('Average synaptic weight')
 xlabel('Time (ms)')
