@@ -180,9 +180,12 @@ output['spike_t'] = neuronSpikes.t/ms
 output['spike_i'] = np.array(neuronSpikes.i)
 output['dopa'] = dopamine_monitor.t/ms
 
-
-with open(results_dir + 'output', 'wb') as file:
-    pickle.dump(output, file)
+try :
+    with open(results_dir + 'output', 'wb') as file:
+        pickle.dump(output, file)
+except:
+    with open('output', 'wb') as file:
+        pickle.dump(output, file)
 
 
 #figure(figsize=(9,18))
