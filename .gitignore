@@ -8,3 +8,6 @@
 .vs/ProjectSettings.json
 .vs/Code/v15/.suo
 .vs/config/applicationhost.config
+*.db
+*.opendb
+Conditionning/output

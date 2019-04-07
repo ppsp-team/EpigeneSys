@@ -1,10 +1,12 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import numpy.random as random
+import pickle
 from brian2 import *
 
 """Parameters"""
 memory_intensive = False
+results_dir = "C:\\Users\\Valentin\\Documents\\Projets\\PSC\\Resultats\\Conditionning\\Data\\"
 
 if memory_intensive:
     numberNeuronGroups = 10
@@ -12,12 +14,13 @@ if memory_intensive:
     simulation_duration = 500 * second
     synaptic_weight_interval = 1 * second
     prefs.codegen.target = 'cython'
+    
 else:
+    set_device('cpp_standalone')
     numberNeuronGroups = 2
     neuronGroupSize = 5
     simulation_duration = 120 * second
     synaptic_weight_interval = 20 * second
-    prefs.codegen.target = 'numpy'
 
 start_scope()
 
@@ -126,8 +129,11 @@ synapse_stdp.d = 0
 network.add(synapse_stdp)
 
 # To monitor the synaptic weight
-synapses_monitor = StateMonitor(
-    synapse_stdp, ['s'], record=True, dt=synaptic_weight_interval)
+if memory_intensive:
+    synapses_monitor = StateMonitor(synapse_stdp, ['s'], record=True, dt=synaptic_weight_interval)
+else:
+    synapses_monitor = StateMonitor(synapse_stdp, ['s'], record=list(range(int(len(neurons)**2*epsilon))), dt=synaptic_weight_interval)
+    # Necessary for cpp standalone code. It's not convenient but brian does not handle record=True with the generated code.
 network.add(synapses_monitor)
 
 """Dopamine signaling section"""
@@ -156,64 +162,80 @@ network.add(reward)
 ## Classical STDP
 #synapse_stdp.mode = 0
 
-## Dopamine modulated STDP
+# Dopamine modulated STDP
 synapse_stdp.mode = 1
-neuronSpikes = SpikeMonitor(neurons, record=True)
+neuronSpikes = SpikeMonitor(neurons, record=list(range(len(neurons))))
 network.add(neuronSpikes)
+
+# Running the network
 network.run(simulation_duration, report='text')
 
-## Results
-figure(figsize=(9,18))
-subplot(311)
-rewardTimes = [t for t in dopamine_monitor.t/ms if t < 5000]
-if len(rewardTimes) > 0:
-   plt.axvline(x = rewardTimes[0], linestyle = '-', color = 'orange', label='dopamine release')
-for rewardTime in rewardTimes[1:]:
-   plt.axvline(x = rewardTime, linestyle = '-', color = 'orange')
-spikeTimes = [t for t in neuronSpikes.t/ms if t < 5000]
-spikeIndex = neuronSpikes.i[:len(spikeTimes)]
-plt.plot(spikeTimes, spikeIndex, '.', markersize=3, label='neuron spike')
-ylabel('Neuron Index')
-xlabel('Time (ms)')
-plt.legend()
+# Results
 
-subplot(312)
-rewardTimes = [t for t in dopamine_monitor.t/ms if t > simulation_duration*1000/second-5000]
-if len(rewardTimes) > 0:
-   plt.axvline(x = rewardTimes[0], linestyle = '-', color = 'orange', label='dopamine release')
-for rewardTime in rewardTimes[1:]:
-   plt.axvline(x = rewardTime, linestyle = '-', color = 'orange')
-spikeTimes = [t for t in neuronSpikes.t/ms if t > simulation_duration*1000/second-5000]
-spikeIndex = neuronSpikes.i[-len(spikeTimes):]
-plt.plot(spikeTimes, spikeIndex, '.', markersize=3, label='neuron spike')
-ylabel('Neuron Index')
-xlabel('Time (ms)')
-plt.legend()
+output = dict()
+output['t'] = synapses_monitor.t/ms
+output['s'] = synapses_monitor.s
+output['i'] = np.array(synapse_stdp.i)
+output['spike_t'] = neuronSpikes.t/ms
+output['spike_i'] = np.array(neuronSpikes.i)
+output['dopa'] = dopamine_monitor.t/ms
 
-subplot(313)
-group1 = np.array([0.] * len(synapses_monitor.t))
-group1_nb_synapses = 0
-mean = np.array([0.] * len(synapses_monitor.t))
-mean_nb_synapses = 0
-other = np.array([0.] * len(synapses_monitor.t))
-other_nb_synapses = 0
-for i in range(len(synapses_monitor.s)):
-    if synapse_stdp.i[i] < neuronGroupSize:
-        group1 += synapses_monitor.s[i]
-        group1_nb_synapses += 1
-    else:
-        other += synapses_monitor.s[i]
-        other_nb_synapses += 1
-    mean += synapses_monitor.s[i]
-    mean_nb_synapses += 1
-mean = mean / mean_nb_synapses
-group1 = group1/group1_nb_synapses
-other = other/other_nb_synapses
-plt.plot(synapses_monitor.t, group1, label='group 1')
-plt.plot(synapses_monitor.t, other, label='other')
-plt.plot(synapses_monitor.t, mean, label='mean')
-ylabel('Average synaptic weight')
-xlabel('Time (s)')
-plt.legend()
-tight_layout()
-show(block=True)
+
+with open(results_dir + 'output', 'wb') as file:
+    pickle.dump(output, file)
+
+
+#figure(figsize=(9,18))
+#subplot(311)
+#rewardTimes = [t for t in dopamine_monitor.t/ms if t < 5000]
+#if len(rewardTimes) > 0:
+#   plt.axvline(x = rewardTimes[0], linestyle = '-', color = 'orange', label='dopamine release')
+#for rewardTime in rewardTimes[1:]:
+#   plt.axvline(x = rewardTime, linestyle = '-', color = 'orange')
+#spikeTimes = [t for t in neuronSpikes.t/ms if t < 5000]
+#spikeIndex = neuronSpikes.i[:len(spikeTimes)]
+#plt.plot(spikeTimes, spikeIndex, '.', markersize=3, label='neuron spike')
+#ylabel('Neuron Index')
+#xlabel('Time (ms)')
+#plt.legend()
+
+#subplot(312)
+#rewardTimes = [t for t in dopamine_monitor.t/ms if t > simulation_duration*1000/second-5000]
+#if len(rewardTimes) > 0:
+#   plt.axvline(x = rewardTimes[0], linestyle = '-', color = 'orange', label='dopamine release')
+#for rewardTime in rewardTimes[1:]:
+#   plt.axvline(x = rewardTime, linestyle = '-', color = 'orange')
+#spikeTimes = [t for t in neuronSpikes.t/ms if t > simulation_duration*1000/second-5000]
+#spikeIndex = neuronSpikes.i[-len(spikeTimes):]
+#plt.plot(spikeTimes, spikeIndex, '.', markersize=3, label='neuron spike')
+#ylabel('Neuron Index')
+#xlabel('Time (ms)')
+#plt.legend()
+
+#subplot(313)
+#group1 = np.array([0.] * len(synapses_monitor.t))
+#group1_nb_synapses = 0
+#mean = np.array([0.] * len(synapses_monitor.t))
+#mean_nb_synapses = 0
+#other = np.array([0.] * len(synapses_monitor.t))
+#other_nb_synapses = 0
+#for i in range(len(synapses_monitor.s)):
+#    if synapse_stdp.i[i] < neuronGroupSize:
+#        group1 += synapses_monitor.s[i]
+#        group1_nb_synapses += 1
+#    else:
+#        other += synapses_monitor.s[i]
+#        other_nb_synapses += 1
+#    mean += synapses_monitor.s[i]
+#    mean_nb_synapses += 1
+#mean = mean / mean_nb_synapses
+#group1 = group1/group1_nb_synapses
+#other = other/other_nb_synapses
+#plt.plot(synapses_monitor.t, group1, label='group 1')
+#plt.plot(synapses_monitor.t, other, label='other')
+#plt.plot(synapses_monitor.t, mean, label='mean')
+#ylabel('Average synaptic weight')
+#xlabel('Time (s)')
+#plt.legend()
+#tight_layout()
+#show(block=True)
