@@ -6,7 +6,7 @@ results_dir = "C:\\Users\\Valentin\\Documents\\Projets\\PSC\\Resultats\\Conditio
 
 # Unpickling data from output file
 
-with open (results_dir + 'output', 'rb') as file:
+with open (results_dir + 'output_file', 'rb') as file:
     output = pickle.load(file)
     
 t = output['t']

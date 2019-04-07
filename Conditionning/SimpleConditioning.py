@@ -181,10 +181,10 @@ output['spike_i'] = np.array(neuronSpikes.i)
 output['dopa'] = dopamine_monitor.t/ms
 
 try :
-    with open(results_dir + 'output', 'wb') as file:
+    with open(results_dir + 'output_file', 'wb') as file:
         pickle.dump(output, file)
 except:
-    with open('output', 'wb') as file:
+    with open('output_file', 'wb') as file:
         pickle.dump(output, file)
 
 
