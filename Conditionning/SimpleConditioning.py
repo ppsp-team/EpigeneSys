@@ -2,25 +2,47 @@ import matplotlib.pyplot as plt
 import numpy as np
 import numpy.random as random
 import pickle
+import argparse
+import os
 from brian2 import *
 
-"""Parameters"""
-memory_intensive = False
-results_dir = "C:\\Users\\Valentin\\Documents\\Projets\\PSC\\Resultats\\Conditionning\\Data\\"
+# Parsing arguments
 
-if memory_intensive:
-    numberNeuronGroups = 10
-    neuronGroupSize = 10
-    simulation_duration = 500 * second
-    synaptic_weight_interval = 1 * second
-    prefs.codegen.target = 'cython'
-    
-else:
+parser = argparse.ArgumentParser(description='Run simple conditioning')
+parser.add_argument('-n', '--numberNeuronGroups', type=int, default=10,
+                   help="number of neuron groups in the simulation")
+parser.add_argument('-s', '--neuronGroupSize', type=int, default=10, 
+                    help="number of neurons in one group")
+parser.add_argument('-t', '--time', type=int, default=500,
+                   help='duration of the simulation')
+parser.add_argument('-d', '--dir', type=str, default='',
+                   help='directory for storing results')
+parser.add_argument('-o', '--output', type=str, default='output_file',
+                   help='name of output file')
+parser.add_argument('-c', '--cpp_standalone', action='store_true', default=False,
+                   help='run with cpp standalone code generation')
+
+args = parser.parse_args()
+
+
+"""Parameters"""
+
+results_dir = args.dir
+output_file = os.path.normpath(os.path.join(results_dir, args.output))
+print(output_file)
+with open(output_file, 'wb') as file:
+    pass
+
+if args.cpp_standalone:
     set_device('cpp_standalone')
-    numberNeuronGroups = 2
-    neuronGroupSize = 5
-    simulation_duration = 120 * second
-    synaptic_weight_interval = 20 * second
+else:
+    prefs.codegen.target = 'cython'
+
+numberNeuronGroups = args.numberNeuronGroups
+neuronGroupSize = args.neuronGroupSize
+simulation_duration = args.time * second
+
+synaptic_weight_interval = 20 * second
 
 start_scope()
 
@@ -129,11 +151,11 @@ synapse_stdp.d = 0
 network.add(synapse_stdp)
 
 # To monitor the synaptic weight
-if memory_intensive:
-    synapses_monitor = StateMonitor(synapse_stdp, ['s'], record=True, dt=synaptic_weight_interval)
-else:
+if args.cpp_standalone:
     synapses_monitor = StateMonitor(synapse_stdp, ['s'], record=list(range(int(len(neurons)**2*epsilon))), dt=synaptic_weight_interval)
     # Necessary for cpp standalone code. It's not convenient but brian does not handle record=True with the generated code.
+else:
+    synapses_monitor = StateMonitor(synapse_stdp, ['s'], record=True, dt=synaptic_weight_interval)
 network.add(synapses_monitor)
 
 """Dopamine signaling section"""
@@ -180,12 +202,8 @@ output['spike_t'] = neuronSpikes.t/ms
 output['spike_i'] = np.array(neuronSpikes.i)
 output['dopa'] = dopamine_monitor.t/ms
 
-try :
-    with open(results_dir + 'output_file', 'wb') as file:
-        pickle.dump(output, file)
-except:
-    with open('output_file', 'wb') as file:
-        pickle.dump(output, file)
+with open(output_file, 'wb') as file:
+    pickle.dump(output, file)
 
 
 #figure(figsize=(9,18))
