@@ -12,9 +12,9 @@ try:
         else:
             try:
                 os.system(tasks[i])
-                tasks[i] = 'OK ' + tasks[i]
-            except KeyboardInterrupt:
-                break
+            except:
+                continue
+            tasks[i] = 'OK ' + tasks[i]
 finally:
     with open(toDoList, 'w') as f:
         f.writelines(tasks)
