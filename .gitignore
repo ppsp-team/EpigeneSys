@@ -10,4 +10,5 @@
 .vs/config/applicationhost.config
 *.db
 *.opendb
-Conditionning/output
+Conditioning/output
+__pycache__

@@ -5,6 +5,7 @@ import pickle
 import argparse
 import os
 from brian2 import *
+from affichage import affichage
 
 # Parsing arguments
 
@@ -15,9 +16,9 @@ parser.add_argument('-s', '--neuronGroupSize', type=int, default=10,
                     help="number of neurons in one group")
 parser.add_argument('-t', '--time', type=int, default=500,
                    help='duration of the simulation')
-parser.add_argument('-d', '--dir', type=str, default='',
+parser.add_argument('-d', '--dir', type=str, default='results',
                    help='directory for storing results')
-parser.add_argument('-o', '--output', type=str, default='output_file',
+parser.add_argument('-o', '--output', type=str, default='',
                    help='name of output file')
 parser.add_argument('-c', '--cpp_standalone', action='store_true', default=False,
                    help='run with cpp standalone code generation')
@@ -25,11 +26,22 @@ parser.add_argument('-c', '--cpp_standalone', action='store_true', default=False
 args = parser.parse_args()
 
 
-"""Parameters"""
+# Parameters
 
 results_dir = args.dir
+if args.output == '':
+    args.output = "output_file_{}x{}_{}s".format(args.numberNeuronGroups, args.neuronGroupSize, args.time)
 output_file = os.path.normpath(os.path.join(results_dir, args.output))
-print(output_file)
+
+# if output file already exists :
+n = 2
+while os.path.exists(output_file):
+    if output_file.endswith("({})".format(str(n-1))):
+        output_file = output_file[:-3] + "({})".format(str(n))
+    else:
+        output_file += "({})".format(str(n))
+    n += 1
+
 with open(output_file, 'wb') as file:
     pass
 
@@ -195,9 +207,9 @@ network.run(simulation_duration, report='text')
 # Results
 
 output = dict()
-output['t'] = synapses_monitor.t/ms
-output['s'] = synapses_monitor.s
-output['i'] = np.array(synapse_stdp.i)
+output['time'] = synapses_monitor.t/ms
+output['synaptic_weights'] = synapses_monitor.s
+output['idx'] = np.array(synapse_stdp.i)
 output['spike_t'] = neuronSpikes.t/ms
 output['spike_i'] = np.array(neuronSpikes.i)
 output['dopa'] = dopamine_monitor.t/ms
@@ -205,58 +217,4 @@ output['dopa'] = dopamine_monitor.t/ms
 with open(output_file, 'wb') as file:
     pickle.dump(output, file)
 
-
-#figure(figsize=(9,18))
-#subplot(311)
-#rewardTimes = [t for t in dopamine_monitor.t/ms if t < 5000]
-#if len(rewardTimes) > 0:
-#   plt.axvline(x = rewardTimes[0], linestyle = '-', color = 'orange', label='dopamine release')
-#for rewardTime in rewardTimes[1:]:
-#   plt.axvline(x = rewardTime, linestyle = '-', color = 'orange')
-#spikeTimes = [t for t in neuronSpikes.t/ms if t < 5000]
-#spikeIndex = neuronSpikes.i[:len(spikeTimes)]
-#plt.plot(spikeTimes, spikeIndex, '.', markersize=3, label='neuron spike')
-#ylabel('Neuron Index')
-#xlabel('Time (ms)')
-#plt.legend()
-
-#subplot(312)
-#rewardTimes = [t for t in dopamine_monitor.t/ms if t > simulation_duration*1000/second-5000]
-#if len(rewardTimes) > 0:
-#   plt.axvline(x = rewardTimes[0], linestyle = '-', color = 'orange', label='dopamine release')
-#for rewardTime in rewardTimes[1:]:
-#   plt.axvline(x = rewardTime, linestyle = '-', color = 'orange')
-#spikeTimes = [t for t in neuronSpikes.t/ms if t > simulation_duration*1000/second-5000]
-#spikeIndex = neuronSpikes.i[-len(spikeTimes):]
-#plt.plot(spikeTimes, spikeIndex, '.', markersize=3, label='neuron spike')
-#ylabel('Neuron Index')
-#xlabel('Time (ms)')
-#plt.legend()
-
-#subplot(313)
-#group1 = np.array([0.] * len(synapses_monitor.t))
-#group1_nb_synapses = 0
-#mean = np.array([0.] * len(synapses_monitor.t))
-#mean_nb_synapses = 0
-#other = np.array([0.] * len(synapses_monitor.t))
-#other_nb_synapses = 0
-#for i in range(len(synapses_monitor.s)):
-#    if synapse_stdp.i[i] < neuronGroupSize:
-#        group1 += synapses_monitor.s[i]
-#        group1_nb_synapses += 1
-#    else:
-#        other += synapses_monitor.s[i]
-#        other_nb_synapses += 1
-#    mean += synapses_monitor.s[i]
-#    mean_nb_synapses += 1
-#mean = mean / mean_nb_synapses
-#group1 = group1/group1_nb_synapses
-#other = other/other_nb_synapses
-#plt.plot(synapses_monitor.t, group1, label='group 1')
-#plt.plot(synapses_monitor.t, other, label='other')
-#plt.plot(synapses_monitor.t, mean, label='mean')
-#ylabel('Average synaptic weight')
-#xlabel('Time (s)')
-#plt.legend()
-#tight_layout()
-#show(block=True)
+affichage(output_file, numberNeuronGroups, neuronGroupSize, args.time)
