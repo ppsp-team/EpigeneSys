@@ -1,3 +1,18 @@
-OK python SimpleConditioning.py -c
-OK python SimpleConditioning.py -n 20 -s 20 -t 1000 -c
-OK python SimpleConditioning.py -c
+python SimpleConditioning.py -n 20 -s 10 -t 3600 -c
+python SimpleConditioning.py -n 40 -s 10 -t 3600 -c
+python SimpleConditioning.py -n 60 -s 10 -t 3600 -c
+python SimpleConditioning.py -n 80 -s 10 -t 3600 -c
+python SimpleConditioning.py -n 100 -s 10 -t 3600 -c
+python SimpleConditioning.py -n 120 -s 10 -t 3600 -c
+python SimpleConditioning.py -n 140 -s 10 -t 3600 -c
+python SimpleConditioning.py -n 160 -s 10 -t 3600 -c
+python SimpleConditioning.py -n 180 -s 10 -t 3600 -c
+python SimpleConditioning.py -n 20 -s 25 -t 3600 -c
+python SimpleConditioning.py -n 40 -s 25 -t 3600 -c
+python SimpleConditioning.py -n 60 -s 25 -t 3600 -c
+python SimpleConditioning.py -n 80 -s 25 -t 3600 -c
+python SimpleConditioning.py -n 100 -s 25 -t 3600 -c
+python SimpleConditioning.py -n 120 -s 25 -t 3600 -c
+python SimpleConditioning.py -n 140 -s 25 -t 3600 -c
+python SimpleConditioning.py -n 160 -s 25 -t 3600 -c
+python SimpleConditioning.py -n 180 -s 25 -t 3600 -c
