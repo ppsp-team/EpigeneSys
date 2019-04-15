@@ -18,6 +18,8 @@ parser.add_argument('-t', '--time', type=int, default=500,
                    help='duration of the simulation')
 parser.add_argument('-d', '--dir', type=str, default='results',
                    help='directory for storing results')
+parser.add_argument('--delay', type=int, default='100',
+                    help='delay of dopamine in ms')
 parser.add_argument('-o', '--output', type=str, default='',
                    help='name of output file')
 parser.add_argument('-c', '--cpp_standalone', action='store_true', default=False,
@@ -30,7 +32,7 @@ args = parser.parse_args()
 
 results_dir = args.dir
 if args.output == '':
-    args.output = "output_file_{}x{}_{}s".format(args.numberNeuronGroups, args.neuronGroupSize, args.time)
+    args.output = "output_file_{}x{}_{}s_{}ms".format(args.numberNeuronGroups, args.neuronGroupSize, args.time, args.delay)
 output_file = os.path.normpath(os.path.join(results_dir, args.output))
 
 # if output file already exists :
@@ -187,7 +189,7 @@ network.add(conditioning)
 # Synapse that accounts for the effect of dopamine on plasticity
 reward = Synapses(dopamine, synapse_stdp, on_pre='''d_post += epsilon_dopa''', method='exact')
 reward.connect(p=1.) # every synapse is affected by dopamine
-reward.delay='100*ms' # dopamine reaches the synapse 100ms after the conditioning stimulus
+reward.delay='{}*ms'.format(args.delay) # dopamine reaches the synapse 100ms after the conditioning stimulus
 
 # The synapse is ready to add !
 network.add(reward)

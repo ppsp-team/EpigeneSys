@@ -20,7 +20,7 @@ with open(toDoList, 'r') as f:
 
 try:
     for i in range(len(tasks)):
-        if tasks[i].split()[0] == 'OK':
+        if tasks[i] == '\n' or tasks[i].split()[0] == 'OK':
             pass
         else:
             try:

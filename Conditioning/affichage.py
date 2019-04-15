@@ -26,8 +26,8 @@ def affichage(output_file, number=10, size=10, duration=500):
     # Printing results
 
     plt.plot(t, synaptic_weights[idx < size].mean(axis=0), 'g', label='group 1')
-    plt.plot(t, synaptic_weights[idx < size].mean(axis=0)+np.sqrt(synaptic_weights[idx < size].var(axis=0)/size), 'g--', label='group1 + standard error')
-    plt.plot(t, synaptic_weights[idx < size].mean(axis=0)-np.sqrt(synaptic_weights[idx < size].var(axis=0)/size), 'g--', label='group1 - standard erro')
+    #plt.plot(t, synaptic_weights[idx < size].mean(axis=0)+np.sqrt(synaptic_weights[idx < size].var(axis=0)/size), 'g--', label='group1 + standard error')
+    #plt.plot(t, synaptic_weights[idx < size].mean(axis=0)-np.sqrt(synaptic_weights[idx < size].var(axis=0)/size), 'g--', label='group1 - standard error')
     plt.plot(t, synaptic_weights.mean(axis=0), 'b', label='mean')
     plt.plot(t, synaptic_weights.mean(axis=0)+np.sqrt(synaptic_weights.var(axis=0)/(number*size)), 'b--', label='mean + standard error')
 
@@ -42,8 +42,15 @@ def affichage(output_file, number=10, size=10, duration=500):
     
     plt.plot(t, synaptic_weights[(idx < number*i_max + size) & (idx >= number*i_max)].mean(axis=0), 'r--', label='group max')
 
+    
+    #last_value = synaptic_weights[idx < size][:, -1].mean(axis=0)
+    #poly = np.polyfit(t, np.log(np.maximum(10**(-9), 1 - synaptic_weights[idx < size].mean(axis=0)/last_value)), 1)
+    #fit = last_value*(1-np.exp(np.poly1d(poly)(t)))
+    #plt.plot(t, fit)
+
     plt.ylabel('Average synaptic weight')
     plt.xlabel('Time (ms)')
     plt.legend()
     plt.tight_layout()
     plt.savefig(output_file + ".pdf", format='pdf')
+    plt.show()

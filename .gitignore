@@ -12,3 +12,4 @@
 *.opendb
 Conditioning/output
 __pycache__
+Conditioning/results/*
