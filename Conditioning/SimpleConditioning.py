@@ -18,7 +18,7 @@ parser.add_argument('-t', '--time', type=int, default=500,
                    help='duration of the simulation')
 parser.add_argument('-d', '--dir', type=str, default='results',
                    help='directory for storing results')
-parser.add_argument('--delay', type=int, default='100',
+parser.add_argument('--delay', type=int, default='1000',
                     help='delay of dopamine in ms')
 parser.add_argument('-o', '--output', type=str, default='',
                    help='name of output file')
