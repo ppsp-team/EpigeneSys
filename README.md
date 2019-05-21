@@ -1,6 +1,7 @@
 # Brian implementation of Izhikevich's 2007 synapse model
 ## Model basics
 * ```SynapseModel/STDP_Reward```: Brian implementation of Izhikevich's synapse model as described in his 2007 paper (see equation below).
+
 ![equation](SynapseModel/equation.png)
 
 Plots the evolution of the model parameters for a simple two-neuron network:
