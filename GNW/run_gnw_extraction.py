@@ -25,14 +25,23 @@ def extract_data(filename):
     # dump = [input_mon.t / second, input_mon.i * 1, dopamine_monitor.t / second, dopamine_monitor.i * 1, N_activity_plot,
     #             synapse_stdp_monitor_out.t/second, synapse_stdp_monitor_out.s.T/gmax]
 
+    # Input spikes
     inpt = dump[0]
     inpi = dump[1]
+
+    # Extracellular dopamine
     dopt = dump[2]
     dopi = dump[3]
+
+    # Number of neurons per group on a graph
     N_activity_plot = dump[4]
+
+    # GNW-Motor Cortex synaptic weights
     synt = dump[5]
     synw = dump[6]
-    
+
+    # Total runtime to use in the analysis. If you decide to produce data for different time periods, please change
+    # this number to a corresponding total length of your simulation
     runtime = 350
 
     reward = np.floor(dopt)
@@ -44,10 +53,13 @@ def extract_data(filename):
 
     bins = np.linspace(0, runtime, num=10)
     matured_value = runtime / len(bins) * 0.1
-     
+
+    # The first runtime - T seconds are train data, the last T seconds are used as test data
     T = 100.
+
+    # calculated for last T seconds out of total 350s run
     score = 100 - (len(negative_reward[negative_reward > (runtime - T)]) +
-                   len(missed_positive_reward[missed_positive_reward > (runtime - T)])) * 100 / T #calculated for last T seconds out of total 350s run
+                   len(missed_positive_reward[missed_positive_reward > (runtime - T)])) * 100 / T
 
     w_fin = synw[-1]
     n_selected = len(w_fin[w_fin >= 0.5])
@@ -75,6 +87,17 @@ def extract_data(filename):
             break
 
     return score, var_fin, learn_time, n_selected, n_pruned
+
+
+# For every run we save following parameters:
+# # Number of a simulation
+# # Level of the spontaneous intrinsic activity
+# # Excitatory/Inhibitory ratio in the GNW
+# # Conditioning type (True - Trace, False - Delay)
+# # Final score (based on the last T seconds)
+# # Final variance of the GNW-MC weights
+# # Learning time (if applicable)
+# # Number of selected neurons, as well as the number of pruned neurons
 
 
 print("sim_num,rate_num,ratio,trace,score,var_fin,learn_time,n_selected,n_pruned")

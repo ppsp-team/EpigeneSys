@@ -23,6 +23,8 @@ from random import shuffle
 def simulation(sim_num, rate_num, ratio, trace):
 
     print("Now processing: rate_num=", rate_num, "ratio=", ratio)
+
+    # Upload the spikes from the local network ans shuffle the input
     count = np.empty((1000))
     with open('spikes_for_global_alt.pickle', 'rb') as f:
         t_neur, i_neur, labels = pickle.load(f)
@@ -49,41 +51,31 @@ def simulation(sim_num, rate_num, ratio, trace):
     dur = len(count)
     digits = 2
     num_nums_specific = dur // digits
-    pic_dur = 2000  #total time slot for 1 picture (in ms)
+    pic_dur = 2000  # total time slot for 1 picture (in ms)
     spikes_in_picture = 50
-
-    # print('Numbers starting from:')
-    # print(count[:10])
-    # print('Labels starting from:')
-    # print(labels[:10])
 
     per = np.empty((len(count)))
 
     z = 0
     for indx, cnt in enumerate(count):
-        # num_fire = cnt // num_nums_specific
         num_fire = cnt
 
         times = np.zeros(spikes_in_picture)
         indices = np.zeros(spikes_in_picture)
 
         for cntcnt in range(spikes_in_picture):
-            times[cntcnt] = 3 * cntcnt  # total spiking time is 50 * 3(2) ms
+            times[cntcnt] = 3 * cntcnt  # total spiking time of a single image is spikes_in_picture * 3 ms
             indices[cntcnt] = num_fire
 
         i_neur = np.concatenate([i_neur, indices])
-        t_neur = np.concatenate([t_neur, times + (z + 1) * pic_dur])  # first second - relaxation
+        t_neur = np.concatenate([t_neur, times + (z + 1) * pic_dur])  # first second of the simulation - relaxation
         z += 1
         if z >= dur:
             break
 
-    # print('Number of pictures: ', z)
-
     t_neur = t_neur * ms
-    # print('Size of the input arrays: ', t_neur.shape, i_neur.shape)
-    # print('Unique neuron indices firing: ', len(np.unique(i_neur)))
 
-    # Trigger input
+    # Trigger signal input
     spikes_in_picture_trig = 50
     i_trigger = np.zeros(dur*spikes_in_picture_trig)
     t_trigger = np.empty(dur*spikes_in_picture_trig)
@@ -96,7 +88,7 @@ def simulation(sim_num, rate_num, ratio, trace):
 
     t_trigger = t_trigger * ms
 
-    # Parameters
+    # Parameters of the simulation
     # Neurons
     gmax = .25
     taum = 10 * ms
@@ -105,23 +97,23 @@ def simulation(sim_num, rate_num, ratio, trace):
     vr = -60 * mV
     El = -74 * mV
     taue = 5 * ms
-
     Ei = -70 * mV
 
     # STDP
     taupre = 20 * ms
     taupost = taupre
-    dApre = 1e-3  # initially 1e-3 change back!!!!!!!!! 0.01
-    dApost = -dApre * taupre / taupost * 1.  # 1.05 initially what about 1.3(everything flips)?
+    dApre = 1e-3
+    dApost = -dApre * taupre / taupost * 1.
     dApost *= gmax
     dApre *= gmax
 
-    Egmax = 0.02  # 0.02
-    Igmax = Egmax * 10 #10
-    dApre_E = 1.5e-3 * Egmax  # 1e-3 (1.5e-3)
-    dApre_I = 1.5e-3 * Igmax  # 1e-3 (1.5e-3)
+    Egmax = 0.02
+    Igmax = Egmax * 10
+    dApre_E = 1.5e-3 * Egmax
+    dApre_I = 1.5e-3 * Igmax
     dApost_E = -dApre_E * taupre / taupost * 1.05
     dApost_I = -dApre_I * taupre / taupost * 1.05
+
 
     # Dopamine signaling
     tauc = 400 * ms  # initially 1000 ms
@@ -132,8 +124,8 @@ def simulation(sim_num, rate_num, ratio, trace):
     # populations
     N = 50
 
-    # N_E = int(N * 0.8)  # pyramidal neurons
-    # N_I = int(N * 0.2)  # interneurons, 0.2
+    # N_E = int(N * 0.8)  # excitatory pyramidal neurons
+    # N_I = int(N * 0.2)  # interneurons
     N_E = int(N * ratio / 100)
     N_I = int(N * (100 - ratio) / 100)
 
@@ -163,8 +155,7 @@ def simulation(sim_num, rate_num, ratio, trace):
         P_I.v = vr
         net.add(P_I)
 
-
-    # Input to memory
+    # Input layer (images combined with the spontaneous activity)
 
     input_spikes = SpikeGeneratorGroup(digits, i_neur, t_neur)
     net.add(input_spikes)
@@ -184,7 +175,7 @@ def simulation(sim_num, rate_num, ratio, trace):
     trigger_mon = SpikeMonitor(input_trigger)
     net.add(trigger_mon)
 
-    # Synapses within memory layer
+    # Synapses within the GNW layer
 
     eqs_S_E = '''mode: 1
     dc/dt = -c / tauc : 1 (clock-driven)
@@ -211,9 +202,6 @@ def simulation(sim_num, rate_num, ratio, trace):
     ds/dt = mode * c * d / taus : 1 (clock-driven)
     dApre/dt = - (Apre + dApre_I/15) / taupre : 1 (event-driven)
     dApost/dt = - (Apost + dApre_I/15) / taupre : 1 (event-driven)'''
-
-
-    # /15
 
     eqs_pre_I = '''
     ge -= s
@@ -280,7 +268,7 @@ def simulation(sim_num, rate_num, ratio, trace):
         net.add(synapse_stdp_monitor3)
 
 
-    # external noise
+    # Spontaneous activity in the GNW
     C_P_E = PoissonInput(P_E, 'ge', C_ext, rate, 'ge_ext')
     net.add(C_P_E)
     if N_I > 0:
@@ -328,7 +316,7 @@ def simulation(sim_num, rate_num, ratio, trace):
     check_trig.connect(p=1.)
     net.add(check_trig)
 
-    # noise (motor)
+    # Spontaneous activity in the Motor Cortex
     input_Poisson2 = PoissonGroup(1, rates=rate)
     net.add(input_Poisson2)
 
@@ -361,7 +349,7 @@ def simulation(sim_num, rate_num, ratio, trace):
     reward.delay='(rand() / 32.) * pic_dur *ms'
     net.add(reward)
 
-    # monitors
+    # Monitors
     N_activity_plot = 20
     sp_E_sels = [SpikeMonitor(P_E[pi:pi + N_activity_plot]) for pi in range(0, p * N_sub, N_sub)]
     r_E_sels = [PopulationRateMonitor(P_E[pi:pi + N_sub]) for pi in range(0, p * N_sub, N_sub)]
@@ -377,10 +365,10 @@ def simulation(sim_num, rate_num, ratio, trace):
         sp_I = 0
         r_I = 0
 
-    # simulate, can be long >120s
+    # Simulation
     net.run(350 * second, report='stdout')
 
-    # pickling
+    # Pickling
     dump = [input_mon.t / second, input_mon.i * 1, dopamine_monitor.t / second, dopamine_monitor.i * 1, N_activity_plot,
             synapse_stdp_monitor_out.t/second, synapse_stdp_monitor_out.s.T/gmax]
 
@@ -390,15 +378,14 @@ def simulation(sim_num, rate_num, ratio, trace):
 if __name__ == '__main__':
     # Generate parameters for parallelization
     params = []
-    ratio = 100
-    for sim_num in [0]:
-        for rate_num in [0]:
-        # for ratio in range(5, 101, 5):
-            for trace in [False]:  # False = Delay conditioning
-                if (os.path.exists('data{}_rate{}_ratio{}_cond{}.pickle'.format(sim_num, rate_num, ratio, trace))):
-                    print("Already processed: rate_num=", rate_num, "ratio=", ratio)
-                else:
-                    params.append((sim_num, rate_num, ratio, trace))
+    for sim_num in range(10):
+        for rate_num in range(21):
+            for ratio in range(5, 101, 5):
+                for trace in [False]:  # False = Delay conditioning
+                    if (os.path.exists('data{}_rate{}_ratio{}_cond{}.pickle'.format(sim_num, rate_num, ratio, trace))):
+                        print("Already processed: rate_num=", rate_num, "ratio=", ratio)
+                    else:
+                        params.append((sim_num, rate_num, ratio, trace))
 
-    Parallel(n_jobs=1, backend="multiprocessing")(delayed(simulation)(sim_num, rate_num, ratio, trace) for sim_num, rate_num, ratio, trace in params)
+    Parallel(n_jobs=8, backend="multiprocessing")(delayed(simulation)(sim_num, rate_num, ratio, trace) for sim_num, rate_num, ratio, trace in params)
 
