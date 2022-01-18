@@ -16,7 +16,7 @@ Epigenesis of the Global Neuronal Workspace.
 
 [![poster_2018](Poster_NN_2018.png)](Poster_NN_2018.pdf)
 
-Poster presented to the symposium "Neural networks - from brains to machines and vice versa" on 11th - 12th October 2018 at the Institut Pasteur, Paris, France.
+Poster presented at the symposium ["Neural networks - from brains to machines and vice versa" on the 11th - 12th October 2018 at the Institut Pasteur, Paris, France](https://research.pasteur.fr/en/event/neural-networks-from-brains-to-machines-and-vice-versa/).
 
 ### Implementation in [Brian 2](https://brian2.readthedocs.io/) of the Izhikevich's 2007 synapse model
 * [```SynapseModel/STDP_Reward```](SynapseModel/STDP_Reward.ipynb): Brian 2 implementation of Izhikevich's synapse model as described in his 2007 paper (see equation below).
