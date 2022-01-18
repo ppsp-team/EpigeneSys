@@ -14,6 +14,10 @@ Epigenesis of the Global Neuronal Workspace.
 
 > Authors: Guillaume Dumas, Jean-Stanislas Denain, Valentin Villecroze, Camille Démarre, Gauthier Guinet, Paul Jacob, Anne-Sophie Migeon, Jean-Pierre Changeux
 
+[![poster_2018](Poster_NN_2018.png)](Poster_NN_2018.pdf)
+
+Poster presented to the symposium "Neural networks - from brains to machines and vice versa" on 11th - 12th October 2018 at the Institut Pasteur, Paris, France.
+
 ### Implementation in [Brian 2](https://brian2.readthedocs.io/) of the Izhikevich's 2007 synapse model
 * [```SynapseModel/STDP_Reward```](SynapseModel/STDP_Reward.ipynb): Brian 2 implementation of Izhikevich's synapse model as described in his 2007 paper (see equation below).
 
