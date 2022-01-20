@@ -29,13 +29,10 @@ def simulation(sim_num, rate_num, ratio, trace):
     with open('input/spikes_for_global_alt.pickle', 'rb') as f:
         t_neur, i_neur, labels = pickle.load(f)
 
-    acc = 0
     for ii in range(350):
         this_sec = t_neur[t_neur > ii][0]
         count[ii] = i_neur[np.argwhere(t_neur == this_sec)[0][0]] * 1
-        if labels[ii] == count[ii]:
-            acc += 1 / 10
-    # print('Accuracy of the local network: {:.3}%'.format(acc))
+        
 
     labels1 = copy(labels)
     count1 = copy(count)
